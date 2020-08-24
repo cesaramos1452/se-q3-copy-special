@@ -1,6 +1,6 @@
 """
 Unit test cases for copyspecial.py
-Students should not need to modify this file.
+Students should not modify this file.
 """
 
 __author__ = "madarp"
@@ -10,33 +10,22 @@ import re
 import os
 import unittest
 import importlib
-import inspect
 import tempfile
 import random
 import string
 import shutil
 import zipfile
+import subprocess
+import inspect
+from contextlib import redirect_stdout
 from io import StringIO
 
 # suppress __pycache__ and .pyc files
 sys.dont_write_bytecode = True
 
-# devs: change this to soln.copyspecial to test solution
+# Kenzie devs: change this to 'soln.copyspecial' to test solution
 PKG_NAME = 'copyspecial'
 SPL_REGEX = re.compile(r'__(\w+)__')
-
-
-class Capturing(list):
-    """Context Mgr helper for capturing stdout from a function call"""
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = self._stringio = StringIO()
-        return self
-
-    def __exit__(self, *args):
-        self.extend(self._stringio.getvalue().splitlines())
-        del self._stringio    # free up some memory
-        sys.stdout = self._stdout
 
 
 class RandomFileSet:
@@ -83,21 +72,8 @@ class TestCopyspecial(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Performs module import and suite setup at test-runtime"""
-        # check for python3
         cls.assertGreaterEqual(cls, sys.version_info[0], 3)
-        # This will import the module to be tested
         cls.module = importlib.import_module(PKG_NAME)
-        # make a dictionary of each function in the test module
-        cls.funcs = {
-            k: v for k, v in inspect.getmembers(
-                cls.module, inspect.isfunction
-                )
-            }
-        # check the funcs for required functions
-        assert "get_special_paths" in cls.funcs, \
-            "Missing the get_special_paths() function"
-        assert "zip_to" in cls.funcs, "Missing the zip_to() function"
-        assert "copy_to" in cls.funcs, "Missing the copy_to() function"
 
     def setUp(self):
         self.rfs = RandomFileSet()
@@ -162,26 +138,13 @@ class TestCopyspecial(unittest.TestCase):
             )
         self.clean(zip_name)
 
-    def test_doc_strings(self):
-        """Checking for docstrings on all functions"""
-        self.assertTrue(self.funcs, "Module functions are missing")
-        for func_name, func in self.funcs.items():
-            self.assertIsNotNone(
-                func.__doc__,
-                f'function "{func_name}" is missing a docstring'
-                )
-            # arbitrary length test of at least 10 chars
-            self.assertGreaterEqual(
-                len(func.__doc__), 10,
-                "How about a bit more docstring?"
-                )
-
     def test_main_print(self):
         """Check if the main function is printing the special files list"""
         args = [self.rfs.tmp_dir]
-        with Capturing() as output:
+        buffer = StringIO()
+        with redirect_stdout(buffer):
             self.module.main(args)
-        self.assertIsInstance(output, list)
+            output = buffer.getvalue().splitlines()
         self.assertEqual(len(output), len(self.rfs.spl_file_list))
 
     def test_main_copy_to(self):
@@ -211,6 +174,27 @@ class TestCopyspecial(unittest.TestCase):
         self.module.main(args)
         self.assertTrue(os.path.exists(to_zip))
         self.clean(to_zip)
+
+    def test_flake8(self):
+        """Checking for PEP8/flake8 compliance"""
+        result = subprocess.run(['flake8', self.module.__file__])
+        self.assertEqual(result.returncode, 0)
+
+    def test_doc_strings(self):
+        """Checking for docstrings on all functions"""
+        for name, func in inspect.getmembers(self.module, inspect.isfunction):
+            self.assertIsNotNone(
+                func.__doc__,
+                f'function "{name}" is missing a docstring'
+            )
+
+    def test_author_string(self):
+        """Checking for author string"""
+        self.assertIsNotNone(self.module.__author__)
+        self.assertNotEqual(
+            self.module.__author__, "???",
+            "Author string is not completed"
+            )
 
 
 if __name__ == '__main__':
