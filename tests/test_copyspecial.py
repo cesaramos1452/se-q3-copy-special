@@ -62,8 +62,9 @@ class RandomFileSet:
         open(os.path.join(tmp_dir, file_list[0]), 'w').close()
         for _ in range(random.randint(43, 314)):  # arbitrary
             filename = self.random_filename()
-            open(os.path.join(tmp_dir, filename), 'w').close()
-            file_list.append(filename)
+            if filename not in file_list:
+                open(os.path.join(tmp_dir, filename), 'w').close()
+                file_list.append(filename)
         return tmp_dir, file_list
 
 
