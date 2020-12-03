@@ -7,7 +7,7 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # give credits
-__author__ = "???"
+__author__ = "Cesaramos1452@yahoo.com"
 
 import re
 import os
@@ -19,26 +19,44 @@ import argparse
 
 def get_special_paths(dirname):
     """Given a dirname, returns a list of all its special files."""
-    # your code here
-    return
+    file_list = os.listdir(dirname)
+    full_paths = []
+    pattern = r'__\w+__'
+    for f in file_list:
+        if re.search(pattern, f):
+            full_paths.append(os.path.abspath(os.path.join(dirname, f)))
+    return full_paths
 
 
 def copy_to(path_list, dest_dir):
+    """given a list of file paths copy to dest_dir"""
     # your code here
-    return
+    if not os.path.isdir(dest_dir):
+        os.makedirs(dest_dir)
+    [shutil.copy(f, dest_dir) for f in path_list]
 
 
 def zip_to(path_list, dest_zip):
+    """zip given list of paths to given zip path"""
     # your code here
-    return
+    for f in path_list:
+        zipped = subprocess.check_output(['zip', '-j', dest_zip, f])
+    return zipped
+
+
+# checkout put <--- takes a list with args
 
 
 def main(args):
     """Main driver code for copyspecial."""
     # This snippet will help you get started with the argparse module.
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=(
+        'Will either zip or copy files according to long argument'))
     parser.add_argument('--todir', help='dest dir for special files')
     parser.add_argument('--tozip', help='dest zipfile for special files')
+    parser.add_argument(
+        'from_dir', help='copies or zips from to given directory'
+    )
     # TODO: add one more argument definition to parse the 'from_dir' argument
     ns = parser.parse_args(args)
 
@@ -51,6 +69,14 @@ def main(args):
     # exit(1).
 
     # Your code here: Invoke (call) your functions
+    paths = get_special_paths(ns.from_dir)
+    if ns.todir:
+        copy_to(paths, ns.todir)
+    if ns.tozip:
+        zip_to(paths, ns.tozip)
+    elif not ns.todir and not ns.tozip:
+        for f in paths:
+            print(f)
 
 
 if __name__ == "__main__":
